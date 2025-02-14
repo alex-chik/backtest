@@ -39,6 +39,10 @@ st.set_page_config(page_title='Backtesting', layout='wide')
 
 # === Sidebar Inputs ===
 with st.sidebar:
+
+    st.subheader("Asset Selection")
+    ticker = st.selectbox("Ticker", options=TICKERS, index=0)
+
     st.subheader("Style Selection")
     
     # Define interval limits for historical data
@@ -47,14 +51,11 @@ with st.sidebar:
     trading_style = st.selectbox("Trading Style", list(TRADING_STYLES.keys()), index=0)
     interval = TRADING_STYLES[trading_style]
     
-    st.subheader("Asset Selection")
-    
     current_date = datetime.now(py.UTC)
     min_start_date = current_date - timedelta(days=days_back[interval])
-    
     start_date = st.date_input("Start Date", value=min_start_date.date(), min_value=min_start_date.date(), max_value=current_date.date())
     end_date = st.date_input("End Date", value=current_date.date(), min_value=start_date, max_value=current_date.date())
-    ticker = st.selectbox("Ticker", options=TICKERS, index=0)
+    
     historical_clicked = st.button("Get Historical")
     
     st.subheader("Strategy Controls")
@@ -82,8 +83,17 @@ with st.sidebar:
 if historical_clicked:
     data = fetch_historical_data(ticker, interval, start_date, end_date)
     if data is not None:
+        # Convert start_date and end_date to mm/dd/yyyy format
+        formatted_start_date = start_date.strftime("%m/%d/%Y")
+        formatted_end_date = end_date.strftime("%m/%d/%Y")
+
+        # Use the interval directly in the title instead of trading style
         fig = go.Figure([go.Scatter(x=data.index, y=data, mode='lines', name=ticker)])
-        fig.update_layout(title=f"{ticker} {trading_style} Price Data", xaxis_title="Time", yaxis_title="Price")
+        fig.update_layout(
+            title=f"{ticker} Price Data ({interval}) ({formatted_start_date} to {formatted_end_date})",
+            xaxis_title="Time",
+            yaxis_title="Price"
+        )
         st.plotly_chart(fig, use_container_width=True)
 
 # === Run Backtest and Display Results ===
