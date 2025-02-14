@@ -40,7 +40,7 @@ with st.sidebar:
 
     historical_clicked = st.button("Get Historical")
 
-    st.header("Strategy Controls")
+    st.subheader("Strategy Controls")
 
     equity = st.number_input("Initial Equity ($)", value=100000, min_value=1000)
     size = st.number_input("Position Size (%)", value=100, min_value=1, max_value=100)
