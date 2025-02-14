@@ -3,19 +3,19 @@ import pandas as pd
 
 # === Dictionary of Available Strategies ===
 STRATEGIES = {
-    "SMA (Intraday)": "sma_strategy",
-    "EMA (Intraday)": "ema_strategy",
-    "RSI (Intraday)": "rsi_strategy",
-    "Bollinger Bands (Intraday)": "bollinger_bands_strategy",
+    "SMA": "sma_strategy",
+    "EMA": "ema_strategy",
+    "RSI": "rsi_strategy",
+    "Bollinger Bands": "bollinger_bands_strategy",
 }
 
 def get_strategy_signals(data: pd.Series, strategy_name: str, short_mode=False, **kwargs):
     """Selects and runs the appropriate strategy function with parameters."""
     strategy_functions = {
-        "SMA (Intraday)": sma_strategy,
-        "EMA (Intraday)": ema_strategy,
-        "RSI (Intraday)": rsi_strategy,
-        "Bollinger Bands (Intraday)": bollinger_bands_strategy,
+        "SMA": sma_strategy,
+        "EMA": ema_strategy,
+        "RSI": rsi_strategy,
+        "Bollinger Bands": bollinger_bands_strategy,
     }
     strategy_func = strategy_functions.get(strategy_name)
 
