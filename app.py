@@ -41,12 +41,13 @@ st.set_page_config(page_title='Backtesting', layout='wide')
 with st.sidebar:
 
     st.subheader("Asset Selection")
-    ticker = st.selectbox("Ticker", options=TICKERS, index=0)
+    ticker = st.text_input("Ticker", "BTC-USD")
+    #ticker = st.selectbox("Ticker", options=TICKERS, index=0)
 
     st.subheader("Style Selection")
     
     # Define interval limits for historical data
-    days_back = {"1m": 7, "5m": 60, "1h": 60, "1d": 3650}
+    days_back = {"1m": 7, "5m": 59, "1h": 60, "1d": 3650}
     
     trading_style = st.selectbox("Trading Style", list(TRADING_STYLES.keys()), index=0)
     interval = TRADING_STYLES[trading_style]
@@ -62,6 +63,7 @@ with st.sidebar:
     
     equity = st.number_input("Initial Equity ($)", value=DEFAULT_VALUES[trading_style]["equity"], min_value=1000)
     size = st.number_input("Position Size (%)", value=DEFAULT_VALUES[trading_style]["size"], min_value=1, max_value=100)
+    fees = fees = st.number_input("Fees (as %)", value=0.12, format="%.4f")
     selected_label = st.selectbox("Strategy", list(STRATEGIES.keys()), index=0)
     
     # === Dynamic Strategy Input Fields ===
@@ -106,19 +108,37 @@ if backtest_clicked:
         portfolio = bt.Portfolio.from_signals(
             data, entries, exits,
             direction=direction, size=float(size) / 100.0, size_type='percent',
-            fees=0.000, init_cash=equity, freq='1m', min_size=1, size_granularity=1
+            fees=fees/100, init_cash=equity, freq=interval, min_size=1, size_granularity=1
         )
+
+        tab1, tab2, tab3 = st.tabs(["Graphs", "Statistics", "Trades"])
+
+        with tab1:
+            # === Plot Equity Curve ===
+            equity_fig = go.Figure([go.Scatter(x=portfolio.value().index, y=portfolio.value(), mode='lines', name='Equity')])
+            equity_fig.update_layout(title='Equity Curve', xaxis_title='Date', yaxis_title='Equity')
+            st.plotly_chart(equity_fig, use_container_width=True)
+            
+            # === Plot Drawdown Curve ===
+            drawdown_fig = go.Figure([go.Scatter(x=portfolio.drawdown().index, y=portfolio.drawdown() * 100, mode='lines', name='Drawdown', fill='tozeroy', line=dict(color='red'))])
+            drawdown_fig.update_layout(title='Drawdown Curve', xaxis_title='Date', yaxis_title='% Drawdown')
+            st.plotly_chart(drawdown_fig, use_container_width=True)
+            
+            # === Plot Portfolio ===
+            st.markdown("**Portfolio Plot**")
+            st.plotly_chart(portfolio.plot(), use_container_width=True)
         
-        # === Plot Equity Curve ===
-        equity_fig = go.Figure([go.Scatter(x=portfolio.value().index, y=portfolio.value(), mode='lines', name='Equity')])
-        equity_fig.update_layout(title='Equity Curve', xaxis_title='Date', yaxis_title='Equity')
-        st.plotly_chart(equity_fig, use_container_width=True)
+        with tab2:
+            # Display results
+            #st.markdown("**Statistics:**")
+            stats_df = pd.DataFrame(portfolio.stats(), columns=['Value'])
+            stats_df.index.name = 'Metric'  # Set the index name to 'Metric' to serve as the header
+            st.dataframe(stats_df, height=1018)  # Adjust the height as needed to remove the scrollbar
         
-        # === Plot Drawdown Curve ===
-        drawdown_fig = go.Figure([go.Scatter(x=portfolio.drawdown().index, y=portfolio.drawdown() * 100, mode='lines', name='Drawdown', fill='tozeroy', line=dict(color='red'))])
-        drawdown_fig.update_layout(title='Drawdown Curve', xaxis_title='Date', yaxis_title='% Drawdown')
-        st.plotly_chart(drawdown_fig, use_container_width=True)
-        
-        # === Plot Portfolio ===
-        st.markdown("**Portfolio Plot**")
-        st.plotly_chart(portfolio.plot(), use_container_width=True)
+        with tab3:
+            #st.markdown("**Trades:**")
+            trades_df = portfolio.trades.records_readable
+            trades_df = trades_df.round(2)  # Rounding the values for better readability
+            trades_df.index.name = 'Trade No'  # Set the index name to 'Trade Name' to serve as the header
+            trades_df.drop(trades_df.columns[[0,1]], axis=1, inplace=True)
+            st.dataframe(trades_df, width=920, height=1018)  # Set index to False and use full width
